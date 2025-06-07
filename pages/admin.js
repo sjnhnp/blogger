@@ -11,6 +11,7 @@ export default function AdminPage() {
     const router = useRouter();
     const [posts, setPosts] = useState([]);
     const [modalConfig, setModalConfig] = useState({ show: false });
+    const [isDeploying, setIsDeploying] = useState(false);
 
     useEffect(() => {
         if (!loading && !isAdmin) {
@@ -39,16 +40,44 @@ export default function AdminPage() {
         setModalConfig({ show: true, title: '確認刪除', message: '確定要永久刪除這篇文章嗎？', isConfirmDialog: true, onConfirm: performDelete, onCancel: () => setModalConfig({ show: false }) });
     };
 
+    const handleDeploy = async () => {
+        setIsDeploying(true);
+        const deployHookUrl = process.env.CLOUDFLARE_DEPLOY_HOOK;
+        if (!deployHookUrl) {
+            setModalConfig({ show: true, title: '錯誤', message: '找不到部署掛鉤 (Deploy Hook) URL。', isConfirmDialog: false, onConfirm: () => setModalConfig({ show: false }) });
+            setIsDeploying(false);
+            return;
+        }
+        try {
+            const response = await fetch(deployHookUrl, { method: 'POST' });
+            if (response.ok) {
+                 setModalConfig({ show: true, title: '成功', message: '已成功觸發部署！網站將在幾分鐘後更新。', isConfirmDialog: false, onConfirm: () => setModalConfig({ show: false }) });
+            } else {
+                throw new Error('部署請求失敗');
+            }
+        } catch (error) {
+            console.error("部署失敗:", error);
+            setModalConfig({ show: true, title: '錯誤', message: '觸發部署失敗，請稍後再試或檢查您的 Deploy Hook URL。', isConfirmDialog: false, onConfirm: () => setModalConfig({ show: false }) });
+        } finally {
+            setIsDeploying(false);
+        }
+    };
+
     if (loading || !isAdmin) return <div className="text-center py-20">正在驗證您的身份...</div>;
 
     return (
         <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
             <Modal {...modalConfig} />
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-wrap gap-4 justify-between items-center mb-8">
                 <h1 className="text-3xl font-serif font-bold text-primary">文章管理</h1>
-                <Link href="/edit/new" legacyBehavior>
-                    <a className="bg-accent text-white px-4 py-2 rounded-md hover:bg-accent-hover transition-colors">新增文章</a>
-                </Link>
+                <div className="flex gap-4">
+                    <Link href="/edit/new" legacyBehavior>
+                        <a className="bg-accent text-white px-4 py-2 rounded-md hover:bg-accent-hover transition-colors">新增文章</a>
+                    </Link>
+                    <button onClick={handleDeploy} disabled={isDeploying} className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50">
+                        {isDeploying ? '部署中...' : '重新部署網站'}
+                    </button>
+                </div>
             </div>
             <div className="bg-white shadow-md rounded-lg border border-subtle overflow-hidden">
                  <table className="min-w-full leading-normal">
