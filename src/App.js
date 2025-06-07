@@ -30,29 +30,18 @@ const slugify = (text) => {
     .replace(/--+/g, '-');
 };
 
-// **新增**: 產生乾淨文章摘要的函式
 const generateCleanExcerpt = (markdownContent, maxLength = 150) => {
     if (!markdownContent) return '';
-
-    // 1. 使用 'marked' 將 Markdown 轉換為 HTML
     const html = marked.parse(markdownContent);
-
-    // 2. 利用瀏覽器 DOM 功能來移除所有 HTML 標籤
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
     let text = tempDiv.textContent || tempDiv.innerText || '';
-
-    // 3. 清理多餘的空白和換行符，使其更像一段摘要
     text = text.replace(/\s+/g, ' ').trim();
-
-    // 4. 截取指定長度並在需要時加上省略號
     if (text.length > maxLength) {
         return text.substring(0, maxLength) + '...';
     }
-
     return text;
 };
-
 
 // --- 組件 ---
 
@@ -103,7 +92,6 @@ const PostPageSkeleton = () => (
     </main>
 );
 
-
 const Header = ({ admin, onLogout, navigate }) => {
   return (
     <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200">
@@ -131,7 +119,8 @@ const Header = ({ admin, onLogout, navigate }) => {
 const PostItem = ({ post, navigate }) => (
   <article 
     className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer group"
-    onClick={() => navigate(`/post/${post.slug}`)}
+    // **修改**: 編碼 slug 以產生合規的 URL
+    onClick={() => navigate(`/post/${encodeURIComponent(post.slug)}`)}
   >
     <div className="p-8">
       <time className="block text-sm text-gray-500 mb-2">{post.createdAt?.toDate ? new Date(post.createdAt.toDate()).toLocaleDateString() : '日期未知'}</time>
@@ -188,9 +177,15 @@ const PostPage = ({ slug }) => {
 
     useEffect(() => {
         const fetchPost = async () => {
+            if (!slug) {
+                setLoading(false);
+                return;
+            }
             setLoading(true);
             try {
-                const q = query(postsCollectionRef, where("slug", "==", slug), where("published", "==", true));
+                // **修改**: 在查詢前先將 URL 中的 slug 解碼
+                const decodedSlug = decodeURIComponent(slug);
+                const q = query(postsCollectionRef, where("slug", "==", decodedSlug), where("published", "==", true));
                 const querySnapshot = await getDocs(q);
                 if (!querySnapshot.empty) {
                     const docData = querySnapshot.docs[0].data();
@@ -200,16 +195,17 @@ const PostPage = ({ slug }) => {
                     });
                     setPost({ ...docData, sanitizedContent });
                 } else {
-                    console.error("找不到文章");
+                    console.error("找不到文章，解碼後的 slug:", decodedSlug);
                     setPost(null);
                 }
             } catch (error) {
                 console.error("讀取文章內容失敗:", error);
+                setPost(null);
             } finally {
                 setLoading(false);
             }
         };
-        if (slug) fetchPost();
+        fetchPost();
     }, [slug]);
 
     if (loading) return <PostPageSkeleton />;
@@ -372,7 +368,6 @@ const EditorPage = ({ id, navigate, setModalConfig }) => {
       return;
     }
     setSaving(true);
-    // **修改**: 使用新的 generateCleanExcerpt 函式
     const postData = { title, content, excerpt: excerpt || generateCleanExcerpt(content), slug: slugify(title), updatedAt: serverTimestamp(), published: publish };
     try {
       if (id && id !== 'new') {
