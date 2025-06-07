@@ -45,7 +45,40 @@ const Modal = ({ show, title, message, onConfirm, onCancel, isConfirmDialog }) =
     );
 };
 
-// **修改**: 導覽列現在使用 navigate 函式
+// **新增**: 文章列表的骨架屏元件
+const SkeletonPostItem = () => (
+    <div className="bg-white rounded-xl shadow-md overflow-hidden animate-pulse">
+      <div className="p-8">
+        <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+        <div className="h-8 bg-gray-300 rounded w-3/4 mb-4"></div>
+        <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-5/6 mb-2"></div>
+        <div className="h-6 bg-blue-200 rounded w-1/3 mt-6"></div>
+      </div>
+    </div>
+);
+
+// **新增**: 文章內頁的骨架屏元件
+const PostPageSkeleton = () => (
+    <main className="bg-white py-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <article className="max-w-3xl mx-auto animate-pulse">
+                <div className="h-12 bg-gray-300 rounded w-3/4 mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/4 mb-8"></div>
+                <div className="space-y-4">
+                    <div className="h-6 bg-gray-200 rounded w-full"></div>
+                    <div className="h-6 bg-gray-200 rounded w-full"></div>
+                    <div className="h-6 bg-gray-200 rounded w-5/6"></div>
+                    <div className="h-6 bg-gray-200 rounded w-full mt-6"></div>
+                    <div className="h-6 bg-gray-200 rounded w-full"></div>
+                    <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                </div>
+            </article>
+        </div>
+    </main>
+);
+
+
 const Header = ({ admin, onLogout, navigate }) => {
   return (
     <header className="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200">
@@ -70,7 +103,6 @@ const Header = ({ admin, onLogout, navigate }) => {
   );
 };
 
-// **修改**: 文章列表項現在使用 navigate 函式
 const PostItem = ({ post, navigate }) => (
   <article 
     className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 cursor-pointer group"
@@ -106,7 +138,16 @@ const HomePage = ({ navigate }) => {
     fetchPosts();
   }, []);
 
-  if (loading) return <div className="text-center py-20">讀取中...</div>;
+  // **修改**: 使用骨架屏取代「讀取中」文字
+  if (loading) {
+    return (
+        <main className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                {[...Array(6)].map((_, i) => <SkeletonPostItem key={i} />)}
+            </div>
+        </main>
+    );
+  }
 
   return (
     <main className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
@@ -136,6 +177,7 @@ const PostPage = ({ slug }) => {
                     setPost({ ...docData, sanitizedContent });
                 } else {
                     console.error("找不到文章");
+                    setPost(null); // Explicitly set to null if not found
                 }
             } catch (error) {
                 console.error("讀取文章內容失敗:", error);
@@ -146,7 +188,9 @@ const PostPage = ({ slug }) => {
         if (slug) fetchPost();
     }, [slug]);
 
-    if (loading) return <div className="text-center py-20">讀取中...</div>;
+    // **修改**: 使用文章內頁骨架屏
+    if (loading) return <PostPageSkeleton />;
+    
     if (!post) return <div className="text-center py-20">找不到這篇文章。</div>;
 
     return (
@@ -187,7 +231,6 @@ const AdminLogin = ({ navigate }) => {
       <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-lg">
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">管理員登入</h2>
         <form onSubmit={handleLogin}>
-          {/* Form inputs... */}
           <div className="mb-4">
             <label className="block text-gray-700">Email</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required />
@@ -245,7 +288,6 @@ const AdminDashboard = ({ navigate, setModalConfig }) => {
         <h1 className="text-3xl font-bold text-gray-800">文章管理</h1>
         <button onClick={() => navigate('/edit/new')} className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">新增文章</button>
       </div>
-      {/* Table content... */}
       <div className="bg-white shadow-md rounded-lg overflow-hidden">
         <table className="min-w-full leading-normal">
             <thead>
@@ -330,7 +372,6 @@ const EditorPage = ({ id, navigate, setModalConfig }) => {
       <h1 className="text-3xl font-bold mb-8">{id && id !== 'new' ? '編輯文章' : '新增文章'}</h1>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-            {/* Form inputs... */}
             <input type="text" placeholder="文章標題" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full text-2xl font-bold p-3 border-2 border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
             <textarea placeholder="在這裡輸入 Markdown 內容...
 舉例來說，您可以直接貼上從 YouTube 分享功能複製的 <iframe> 程式碼。" value={content} onChange={(e) => setContent(e.target.value)} className="w-full h-96 p-3 border-2 border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono" />
@@ -356,21 +397,18 @@ const EditorPage = ({ id, navigate, setModalConfig }) => {
   );
 };
 
-// **修改**: 主應用程式，核心路由邏輯
 export default function App() {
   const [location, setLocation] = useState(window.location.pathname);
   const [isAdmin, setIsAdmin] = useState(false);
   const [authReady, setAuthReady] = useState(false);
   const [modalConfig, setModalConfig] = useState({ show: false, title: '', message: '', onConfirm: () => {}, onCancel: () => {}, isConfirmDialog: false });
 
-  // 處理瀏覽器歷史記錄變化 (前進/後退按鈕)
   useEffect(() => {
     const handlePopState = () => setLocation(window.location.pathname);
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // 處理 Firebase 身份驗證狀態
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -384,7 +422,6 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // 導覽函式，用於改變 URL 並觸發重新渲染
   const navigate = (path) => {
     window.history.pushState({}, '', path);
     setLocation(path);
@@ -399,11 +436,24 @@ export default function App() {
   const handleModalConfirm = () => { if (modalConfig.onConfirm) { modalConfig.onConfirm(); } closeModal(); };
   const handleModalCancel = () => { if (modalConfig.onCancel) { modalConfig.onCancel(); } closeModal(); };
 
-  // 根據當前 URL 渲染對應的組件
   const renderContent = () => {
-    if (!authReady) return <div className="text-center py-20">驗證身份中...</div>;
-
+    // **修改**: 移除「驗證身份中」的提示
     const path = location.split('/');
+    
+    // 在 authReady 為 false 時，根據路由預先渲染骨架屏
+    if (!authReady) {
+        if (path[1] === 'post' && path[2]) {
+            return <PostPageSkeleton />;
+        }
+        // 對於首頁和其他頁面，顯示首頁的骨架屏
+        return (
+            <main className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
+                <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                    {[...Array(6)].map((_, i) => <SkeletonPostItem key={i} />)}
+                </div>
+            </main>
+        );
+    }
     
     // 保護管理員路由
     if ((path[1] === 'admin' || path[1] === 'edit') && !isAdmin) {
