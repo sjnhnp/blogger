@@ -1,8 +1,3 @@
-// ========================================================================
-//                      pages/post/[slug].js (MODIFIED)
-// ========================================================================
-export const runtime = 'edge'; 
-
 import { postsCollectionRef } from '../../lib/firebase';
 import { query as firestoreQuery, where, getDocs, Timestamp } from 'firebase/firestore';
 import { marked } from 'marked';
@@ -11,8 +6,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
 
-// **修正**: 移除 runtime = 'experimental-edge'
-// export const runtime = 'experimental-edge';
+// **修正**: 移除 runtime 宣告
 
 export default function PostPage({ post }) {
     const router = useRouter();
@@ -60,10 +54,11 @@ export async function getStaticPaths() {
         const q = firestoreQuery(postsCollectionRef, where("published", "==", true));
         const snapshot = await getDocs(q);
         const paths = snapshot.docs.map(doc => ({ params: { slug: doc.data().slug || '' } })).filter(p => p.params.slug);
-        return { paths, fallback: 'blocking' };
+        // **修正**: fallback: false 表示只生成已知的路徑
+        return { paths, fallback: false };
     } catch (error) {
         console.error("getStaticPaths failed:", error);
-        return { paths: [], fallback: 'blocking' }; // 返回空 paths 以防建置失敗
+        return { paths: [], fallback: false };
     }
 }
 
@@ -80,7 +75,8 @@ export async function getStaticProps({ params }) {
             createdAt: docData.createdAt instanceof Timestamp ? docData.createdAt.toMillis() : 0,
             updatedAt: docData.updatedAt instanceof Timestamp ? docData.updatedAt.toMillis() : 0,
         };
-        return { props: { post }, revalidate: 60 };
+        // **修正**: 移除 revalidate，改為純靜態生成
+        return { props: { post } };
     } catch (error) {
         console.error(`getStaticProps for ${params.slug} failed:`, error);
         return { notFound: true };

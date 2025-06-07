@@ -5,9 +5,6 @@ import { postsCollectionRef } from '../lib/firebase';
 import { query, where, orderBy, getDocs, Timestamp } from 'firebase/firestore';
 import Link from 'next/link';
 
-// **修正**: 移除 runtime = 'experimental-edge'
-// export const runtime = 'experimental-edge';
-
 const PostItem = ({ post }) => (
     <Link href={`/post/${post.slug}`} legacyBehavior>
         <a className="block bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 group">
@@ -44,9 +41,10 @@ export async function getStaticProps() {
                 updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toMillis() : 0,
             };
         });
-        return { props: { posts }, revalidate: 60 };
+        // **修正**: 移除 revalidate，改為純靜態生成
+        return { props: { posts } };
     } catch (error) {
         console.error("getStaticProps for index failed:", error);
-        return { props: { posts: [] } }; // 返回空陣列以防建置失敗
+        return { props: { posts: [] } };
     }
 }
