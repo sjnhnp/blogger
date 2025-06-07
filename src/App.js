@@ -25,13 +25,34 @@ const postsCollectionRef = collection(db, "posts");
 const slugify = (text) => {
   if (!text) return '';
   return text.toString().toLowerCase().trim()
-    .replace(/\s+/g, '-') // 將空格替換為 -
-    // 允許任何語言的字母(L)、任何數字系統的數字(N)和連字號。
-    // 移除所有不符合上述規則的字元。
-    // 'u' 旗標是啟用 Unicode 支援的關鍵。
+    .replace(/\s+/g, '-')
     .replace(/[^\p{L}\p{N}-]+/gu, '')
-    .replace(/--+/g, '-'); // 將多個連字號替換為單一連字號
+    .replace(/--+/g, '-');
 };
+
+// **新增**: 產生乾淨文章摘要的函式
+const generateCleanExcerpt = (markdownContent, maxLength = 150) => {
+    if (!markdownContent) return '';
+
+    // 1. 使用 'marked' 將 Markdown 轉換為 HTML
+    const html = marked.parse(markdownContent);
+
+    // 2. 利用瀏覽器 DOM 功能來移除所有 HTML 標籤
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    let text = tempDiv.textContent || tempDiv.innerText || '';
+
+    // 3. 清理多餘的空白和換行符，使其更像一段摘要
+    text = text.replace(/\s+/g, ' ').trim();
+
+    // 4. 截取指定長度並在需要時加上省略號
+    if (text.length > maxLength) {
+        return text.substring(0, maxLength) + '...';
+    }
+
+    return text;
+};
+
 
 // --- 組件 ---
 
@@ -51,7 +72,6 @@ const Modal = ({ show, title, message, onConfirm, onCancel, isConfirmDialog }) =
     );
 };
 
-// **新增**: 文章列表的骨架屏元件
 const SkeletonPostItem = () => (
     <div className="bg-white rounded-xl shadow-md overflow-hidden animate-pulse">
       <div className="p-8">
@@ -64,7 +84,6 @@ const SkeletonPostItem = () => (
     </div>
 );
 
-// **新增**: 文章內頁的骨架屏元件
 const PostPageSkeleton = () => (
     <main className="bg-white py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -118,7 +137,7 @@ const PostItem = ({ post, navigate }) => (
       <time className="block text-sm text-gray-500 mb-2">{post.createdAt?.toDate ? new Date(post.createdAt.toDate()).toLocaleDateString() : '日期未知'}</time>
       <h2 className="text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{post.title}</h2>
       <p className="mt-4 text-gray-600">{post.excerpt}</p>
-      <div className="mt-6 font-medium text-blue-500 group-hover:text-blue-700 transition-colors">閱讀更多 &rarr;</div>
+      <div className="mt-6 font-medium text-blue-500 group-hover:text-blue-700 transition-colors">閱讀更多 →</div>
     </div>
   </article>
 );
@@ -144,7 +163,6 @@ const HomePage = ({ navigate }) => {
     fetchPosts();
   }, []);
 
-  // **修改**: 使用骨架屏取代「讀取中」文字
   if (loading) {
     return (
         <main className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
@@ -183,7 +201,7 @@ const PostPage = ({ slug }) => {
                     setPost({ ...docData, sanitizedContent });
                 } else {
                     console.error("找不到文章");
-                    setPost(null); // Explicitly set to null if not found
+                    setPost(null);
                 }
             } catch (error) {
                 console.error("讀取文章內容失敗:", error);
@@ -194,7 +212,6 @@ const PostPage = ({ slug }) => {
         if (slug) fetchPost();
     }, [slug]);
 
-    // **修改**: 使用文章內頁骨架屏
     if (loading) return <PostPageSkeleton />;
     
     if (!post) return <div className="text-center py-20">找不到這篇文章。</div>;
@@ -355,7 +372,8 @@ const EditorPage = ({ id, navigate, setModalConfig }) => {
       return;
     }
     setSaving(true);
-    const postData = { title, content, excerpt: excerpt || content.substring(0, 150), slug: slugify(title), updatedAt: serverTimestamp(), published: publish };
+    // **修改**: 使用新的 generateCleanExcerpt 函式
+    const postData = { title, content, excerpt: excerpt || generateCleanExcerpt(content), slug: slugify(title), updatedAt: serverTimestamp(), published: publish };
     try {
       if (id && id !== 'new') {
         await setDoc(doc(db, "posts", id), postData, { merge: true });
@@ -443,15 +461,12 @@ export default function App() {
   const handleModalCancel = () => { if (modalConfig.onCancel) { modalConfig.onCancel(); } closeModal(); };
 
   const renderContent = () => {
-    // **修改**: 移除「驗證身份中」的提示
     const path = location.split('/');
     
-    // 在 authReady 為 false 時，根據路由預先渲染骨架屏
     if (!authReady) {
         if (path[1] === 'post' && path[2]) {
             return <PostPageSkeleton />;
         }
-        // 對於首頁和其他頁面，顯示首頁的骨架屏
         return (
             <main className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
                 <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -461,7 +476,6 @@ export default function App() {
         );
     }
     
-    // 保護管理員路由
     if ((path[1] === 'admin' || path[1] === 'edit') && !isAdmin) {
         return <AdminLogin navigate={navigate} />;
     }
