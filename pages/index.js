@@ -1,9 +1,8 @@
-// ========================================================================
-//                           pages/index.js (MODIFIED)
-// ========================================================================
 import { postsCollectionRef } from '../lib/firebase';
 import { query, where, orderBy, getDocs, Timestamp } from 'firebase/firestore';
 import Link from 'next/link';
+
+export const runtime = 'experimental-edge';
 
 const PostItem = ({ post }) => (
     <Link href={`/post/${post.slug}`} legacyBehavior>

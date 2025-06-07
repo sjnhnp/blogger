@@ -1,3 +1,6 @@
+// ========================================================================
+//                      pages/post/[slug].js (MODIFIED)
+// ========================================================================
 import { postsCollectionRef } from '../../lib/firebase';
 import { query as firestoreQuery, where, getDocs, Timestamp } from 'firebase/firestore';
 import { marked } from 'marked';
@@ -7,7 +10,7 @@ import Head from 'next/head';
 import { useEffect, useState } from 'react';
 
 // **修正**: 告訴 Cloudflare Pages 這個頁面需要在 Edge Runtime 運行
-export const runtime = 'edge';
+export const runtime = 'experimental-edge';
 
 export default function PostPage({ post }) {
     const router = useRouter();
