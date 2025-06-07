@@ -24,7 +24,13 @@ const postsCollectionRef = collection(db, "posts");
 // --- 輔助函式 ---
 const slugify = (text) => {
   if (!text) return '';
-  return text.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '').replace(/--+/g, '-');
+  return text.toString().toLowerCase().trim()
+    .replace(/\s+/g, '-') // 將空格替換為 -
+    // 允許任何語言的字母(L)、任何數字系統的數字(N)和連字號。
+    // 移除所有不符合上述規則的字元。
+    // 'u' 旗標是啟用 Unicode 支援的關鍵。
+    .replace(/[^\p{L}\p{N}-]+/gu, '')
+    .replace(/--+/g, '-'); // 將多個連字號替換為單一連字號
 };
 
 // --- 組件 ---
