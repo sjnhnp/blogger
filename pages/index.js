@@ -1,6 +1,4 @@
-// ========================================================================
-//                           pages/index.js (MODIFIED)
-// ========================================================================
+
 import { postsCollectionRef } from '../lib/firebase';
 import { query, where, orderBy, getDocs, Timestamp } from 'firebase/firestore';
 import Link from 'next/link';
