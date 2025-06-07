@@ -1,12 +1,16 @@
 // ========================================================================
-//                      pages/post/[slug].js (MODIFIED)
+//                      pages/post/[slug].js (FINAL STABLE VERSION)
 // ========================================================================
-export const runtime = 'experimental-edge';
+
+// **REVERT**: Removed 'export const runtime = ...'
+// No runtime declaration needed for pure SSG
 
 import { postsCollectionRef } from '../../lib/firebase';
 import { query as firestoreQuery, where, getDocs, Timestamp } from 'firebase/firestore';
 import { marked } from 'marked';
-import DOMPurify from 'isomorphic-dompurify'; // 使用 isomorphic-dompurify 確保伺服器端也能運作
+// **CHANGE**: We can go back to the simpler 'dompurify' since we are not in Edge anymore.
+// However, 'isomorphic-dompurify' also works, so we can leave it to avoid package changes.
+import DOMPurify from 'isomorphic-dompurify';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
@@ -17,7 +21,6 @@ export default function PostPage({ post }) {
 
     useEffect(() => {
         if (post?.content) {
-            // 在客戶端解析 Markdown，避免 hydration mismatch
             const unsafeHtml = marked.parse(post.content);
             const safeHtml = DOMPurify.sanitize(unsafeHtml, {
                 ADD_TAGS: ["iframe"],
@@ -27,13 +30,13 @@ export default function PostPage({ post }) {
         }
     }, [post?.content]);
 
+    // router.isFallback will be true if fallback: true is used, but with false, it's not strictly necessary.
     if (router.isFallback) {
-        return <div className="text-center py-20 font-serif">Loading...</div>;
+        return <div>Loading...</div>;
     }
 
     if (!post) {
-        // 可以在這裡返回一個 404 頁面組件
-        return <div className="text-center py-20 font-serif">文章不存在</div>;
+        return <div>文章不存在</div>;
     }
     
     return (
@@ -67,10 +70,13 @@ export async function getStaticPaths() {
         const q = firestoreQuery(postsCollectionRef, where("published", "==", true));
         const snapshot = await getDocs(q);
         const paths = snapshot.docs.map(doc => ({ params: { slug: doc.data().slug || '' } })).filter(p => p.params.slug);
-        return { paths, fallback: 'blocking' }; // 改為 'blocking' 提供更好的 SSR 體驗
+        
+        // **IMPORTANT CHANGE**: fallback: false means only paths generated at build time will be available.
+        // This is the most stable option for Cloudflare Pages.
+        return { paths, fallback: false };
     } catch (error) {
         console.error("getStaticPaths failed:", error);
-        return { paths: [], fallback: 'blocking' };
+        return { paths: [], fallback: false };
     }
 }
 
@@ -79,17 +85,19 @@ export async function getStaticProps({ params }) {
         const { slug } = params;
         const q = firestoreQuery(postsCollectionRef, where("slug", "==", slug), where("published", "==", true));
         const snapshot = await getDocs(q);
-        if (snapshot.empty) return { notFound: true };
+        if (snapshot.empty) {
+            return { notFound: true };
+        }
         
         const docData = snapshot.docs[0].data();
         const post = {
             ...docData,
             id: snapshot.docs[0].id,
-            // 確保時間戳是可序列化的 milliseconds
             createdAt: docData.createdAt instanceof Timestamp ? docData.createdAt.toMillis() : (docData.createdAt?.seconds * 1000 || 0),
             updatedAt: docData.updatedAt instanceof Timestamp ? docData.updatedAt.toMillis() : (docData.updatedAt?.seconds * 1000 || 0),
         };
         
+        // No revalidate needed, we trigger rebuilds manually.
         return { props: { post } };
     } catch (error) {
         console.error(`getStaticProps for ${params.slug} failed:`, error);
