@@ -1,3 +1,6 @@
+// ========================================================================
+//                       pages/edit/[id].js
+// ========================================================================
 import { useUserData } from '../../lib/hooks';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
@@ -54,7 +57,7 @@ export default function EditPostPage() {
             } else {
                 await addDoc(postsCollectionRef, { ...postData, createdAt: serverTimestamp() });
             }
-            setModalConfig({ show: true, title: '成功', message: `文章已儲存！請重新部署網站以查看更新。`, isConfirmDialog: false, onConfirm: () => router.push('/admin') });
+            setModalConfig({ show: true, title: '成功', message: `文章已儲存！請點擊管理後台的「重新部署網站」按鈕來發布更新。`, isConfirmDialog: false, onConfirm: () => router.push('/admin') });
         } catch (error) {
             console.error("儲存失敗", error);
             setModalConfig({ show: true, title: '錯誤', message: '儲存失敗', isConfirmDialog: false, onConfirm: () => setModalConfig({ show: false }) });
