@@ -1,16 +1,15 @@
 // ========================================================================
-//                      pages/post/[slug].js (FINAL STABLE VERSION)
+//                      pages/post/[slug].js (FINAL & WORKING VERSION)
 // ========================================================================
 
-// **REVERT**: Removed 'export const runtime = ...'
-// No runtime declaration needed for pure SSG
+// **FIX**: Re-add 'experimental-edge' runtime
+export const runtime = 'experimental-edge';
 
 import { postsCollectionRef } from '../../lib/firebase';
 import { query as firestoreQuery, where, getDocs, Timestamp } from 'firebase/firestore';
 import { marked } from 'marked';
-// **CHANGE**: We can go back to the simpler 'dompurify' since we are not in Edge anymore.
-// However, 'isomorphic-dompurify' also works, so we can leave it to avoid package changes.
-import DOMPurify from 'isomorphic-dompurify';
+// **CHANGE**: Import the new, Edge-compatible library
+import sanitizeHtml from 'sanitize-html';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
@@ -22,21 +21,28 @@ export default function PostPage({ post }) {
     useEffect(() => {
         if (post?.content) {
             const unsafeHtml = marked.parse(post.content);
-            const safeHtml = DOMPurify.sanitize(unsafeHtml, {
-                ADD_TAGS: ["iframe"],
-                ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'src', 'width', 'height', 'title']
+            // **CHANGE**: Use sanitize-html to clean the content
+            const safeHtml = sanitizeHtml(unsafeHtml, {
+                allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'iframe', 'h1', 'h2']),
+                allowedAttributes: {
+                    ...sanitizeHtml.defaults.allowedAttributes,
+                    iframe: ['src', 'width', 'height', 'frameborder', 'allow', 'allowfullscreen', 'title'],
+                    img: ['src', 'srcset', 'alt', 'title', 'width', 'height', 'loading'],
+                    a: ['href', 'name', 'target'],
+                    '*': ['class', 'id', 'style']
+                },
+                allowedIframeHostnames: ['www.youtube.com'] // Example: only allow YouTube iframes
             });
             setSanitizedContent(safeHtml);
         }
     }, [post?.content]);
 
-    // router.isFallback will be true if fallback: true is used, but with false, it's not strictly necessary.
     if (router.isFallback) {
-        return <div>Loading...</div>;
+        return <div className="text-center py-20 font-serif">Loading...</div>;
     }
 
     if (!post) {
-        return <div>文章不存在</div>;
+        return <div className="text-center py-20 font-serif">文章不存在</div>;
     }
     
     return (
@@ -71,12 +77,11 @@ export async function getStaticPaths() {
         const snapshot = await getDocs(q);
         const paths = snapshot.docs.map(doc => ({ params: { slug: doc.data().slug || '' } })).filter(p => p.params.slug);
         
-        // **IMPORTANT CHANGE**: fallback: false means only paths generated at build time will be available.
-        // This is the most stable option for Cloudflare Pages.
-        return { paths, fallback: false };
+        // **CHANGE**: Revert to 'blocking' for best UX, now that we are Edge-compatible
+        return { paths, fallback: 'blocking' };
     } catch (error) {
         console.error("getStaticPaths failed:", error);
-        return { paths: [], fallback: false };
+        return { paths: [], fallback: 'blocking' };
     }
 }
 
@@ -97,7 +102,6 @@ export async function getStaticProps({ params }) {
             updatedAt: docData.updatedAt instanceof Timestamp ? docData.updatedAt.toMillis() : (docData.updatedAt?.seconds * 1000 || 0),
         };
         
-        // No revalidate needed, we trigger rebuilds manually.
         return { props: { post } };
     } catch (error) {
         console.error(`getStaticProps for ${params.slug} failed:`, error);
