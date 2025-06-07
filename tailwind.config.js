@@ -1,13 +1,16 @@
+// ========================================================================
+//                         tailwind.config.js
+// ========================================================================
 /** @type {import('tailwindcss').Config} */
 module.exports = {
     content: [
-      "./src/**/*.{js,jsx,ts,tsx}",
+      './pages/**/*.{js,ts,jsx,tsx,mdx}',
+      './components/**/*.{js,ts,jsx,tsx,mdx}',
     ],
     theme: {
       extend: {},
     },
     plugins: [
-      require('@tailwindcss/typography'), // 用於美化 Markdown 輸出樣式
+      require('@tailwindcss/typography'),
     ],
-  }
-  
+  };  
