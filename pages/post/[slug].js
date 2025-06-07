@@ -1,26 +1,34 @@
-// ========================================================================
-//                      pages/post/[slug].js
-// ========================================================================
 import { postsCollectionRef } from '../../lib/firebase';
 import { query as firestoreQuery, where, getDocs, Timestamp } from 'firebase/firestore';
 import { marked } from 'marked';
-import { JSDOM } from 'jsdom';
 import DOMPurify from 'dompurify';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-
-// 在伺服器端建立一個 JSDOM window 來使用 DOMPurify
-const window = new JSDOM('').window;
-const purify = DOMPurify(window);
+import { useEffect, useState } from 'react';
 
 export default function PostPage({ post }) {
     const router = useRouter();
-    if (router.isFallback) return <div>Loading...</div>;
-    const sanitizedContent = purify.sanitize(marked.parse(post.content || ''), {
-        ADD_TAGS: ["iframe"],
-        ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'src', 'width', 'height', 'title']
-    });
+    const [sanitizedContent, setSanitizedContent] = useState('');
 
+    useEffect(() => {
+        if (post?.content) {
+            // 將淨化操作放在 useEffect 中，確保它只在客戶端執行
+            const content = DOMPurify.sanitize(marked.parse(post.content), {
+                ADD_TAGS: ["iframe"],
+                ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder', 'scrolling', 'src', 'width', 'height', 'title']
+            });
+            setSanitizedContent(content);
+        }
+    }, [post?.content]);
+
+    if (router.isFallback) {
+        return <div>Loading...</div>; //或者一個骨架屏
+    }
+
+    if (!post) {
+        return <div>文章不存在</div>;
+    }
+    
     return (
         <>
             <Head>
@@ -43,7 +51,7 @@ export default function PostPage({ post }) {
 export async function getStaticPaths() {
     const q = firestoreQuery(postsCollectionRef, where("published", "==", true));
     const snapshot = await getDocs(q);
-    const paths = snapshot.docs.map(doc => ({ params: { slug: doc.data().slug } }));
+    const paths = snapshot.docs.map(doc => ({ params: { slug: doc.data().slug || '' } })).filter(p => p.params.slug);
     return { paths, fallback: 'blocking' };
 }
 
