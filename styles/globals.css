@@ -1,14 +1,41 @@
+/* ========================================================================
+                         styles/globals.css (MODIFIED)
+======================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@400;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    background-color: #f9fafb; /* bg-gray-50 */
+@layer base {
+    body {
+        @apply bg-brand-light-gray text-brand-gray font-sans;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* 自訂文章排版樣式 */
+    .prose {
+        @apply text-brand-gray;
+    }
+    .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+        @apply font-serif font-bold text-brand-dark;
+    }
+    .prose a {
+        @apply text-brand-blue hover:text-blue-700;
+    }
+    .prose strong {
+        @apply text-brand-dark;
+    }
+    .prose blockquote {
+        @apply font-normal text-brand-gray border-l-4 border-brand-blue bg-blue-50/50 p-4 rounded-r-lg;
+    }
+    .prose code {
+        @apply bg-gray-200 text-sm rounded px-1.5 py-1;
+    }
+    .prose pre {
+        @apply bg-gray-800 text-white p-4 rounded-lg;
+    }
 }
 
 /* 用於骨架屏的動畫 */
