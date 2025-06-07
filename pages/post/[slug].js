@@ -1,7 +1,7 @@
 // ========================================================================
 //                      pages/post/[slug].js (MODIFIED)
 // ========================================================================
-export const runtime = 'edge';
+export const runtime = 'experimental-edge';
 
 import { postsCollectionRef } from '../../lib/firebase';
 import { query as firestoreQuery, where, getDocs, Timestamp } from 'firebase/firestore';

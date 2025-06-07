@@ -3,7 +3,7 @@
 // ========================================================================
 
 // **FIX**: Add this line to specify the Edge Runtime for Cloudflare Pages
-export const runtime = 'edge';
+export const runtime = 'experimental-edge';
 
 // 這個 API 路由觸發您在 Cloudflare Pages 中設定的 Deploy Hook。
 export default async function handler(req, res) {
