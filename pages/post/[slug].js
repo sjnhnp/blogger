@@ -1,3 +1,6 @@
+// ========================================================================
+//                      pages/post/[slug].js (MODIFIED)
+// ========================================================================
 import { postsCollectionRef } from '../../lib/firebase';
 import { query as firestoreQuery, where, getDocs, Timestamp } from 'firebase/firestore';
 import { marked } from 'marked';
@@ -64,7 +67,8 @@ export async function getStaticProps({ params }) {
     const post = {
         ...docData,
         id: snapshot.docs[0].id,
-        createdAt: docData.createdAt.toMillis(),
+        createdAt: docData.createdAt instanceof Timestamp ? docData.createdAt.toMillis() : 0,
+        updatedAt: docData.updatedAt instanceof Timestamp ? docData.updatedAt.toMillis() : 0,
     };
     return { props: { post }, revalidate: 60 };
 }

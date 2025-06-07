@@ -1,5 +1,5 @@
 // ========================================================================
-//                           pages/index.js
+//                           pages/index.js (MODIFIED)
 // ========================================================================
 import { postsCollectionRef } from '../lib/firebase';
 import { query, where, orderBy, getDocs, Timestamp } from 'firebase/firestore';
@@ -36,7 +36,8 @@ export async function getStaticProps() {
         return {
             ...data,
             id: doc.id,
-            createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toMillis() : data.createdAt,
+            createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toMillis() : 0,
+            updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toMillis() : 0,
         };
     });
     return { props: { posts }, revalidate: 60 };

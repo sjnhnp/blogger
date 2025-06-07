@@ -1,12 +1,11 @@
 // ========================================================================
-//                         pages/login.js
+//                         pages/login.js (MODIFIED)
 // ========================================================================
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { auth } from '../lib/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useRouter } from 'next/router';
 import { useUserData } from '../lib/hooks';
-import Link from 'next/link';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -32,7 +31,7 @@ export default function LoginPage() {
         }
     };
     
-    if (loading || user) return null; // Or a loader
+    if (loading || user) return null;
 
     return (
         <div className="min-h-[60vh] flex items-center justify-center">
