@@ -10,7 +10,9 @@
 }
 
 body {
-    @apply bg-base text-primary;
+    /* **修正**: 使用 theme() 函式，而不是 @apply */
+    background-color: theme('colors.base');
+    color: theme('colors.primary');
     font-family: var(--font-inter);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
