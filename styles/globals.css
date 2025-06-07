@@ -20,21 +20,29 @@ body {
 
 /* 重新設計過的 prose 樣式，用於文章內頁 */
 .prose {
-    @apply text-primary;
+    color: theme('colors.primary');
 }
 .prose h1, .prose h2, .prose h3, .prose h4 {
     font-family: var(--font-lora);
-    @apply text-primary;
+    color: theme('colors.primary');
 }
 .prose a {
-    @apply text-accent no-underline transition-colors hover:text-accent-hover;
+    color: theme('colors.accent');
+    text-decoration-line: none;
+    transition-property: color;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+.prose a:hover {
+    color: theme('colors.accent-hover');
 }
 .prose strong {
-    @apply text-primary;
+    color: theme('colors.primary');
 }
 .prose blockquote {
-    @apply border-l-accent text-primary/80;
+    border-left-color: theme('colors.accent');
+    color: theme('colors.primary / 80%');
 }
 .prose code {
-    @apply text-primary/90;
+    color: theme('colors.primary / 90%');
 }
