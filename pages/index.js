@@ -1,8 +1,12 @@
+// ========================================================================
+//                           pages/index.js (MODIFIED)
+// ========================================================================
 import { postsCollectionRef } from '../lib/firebase';
 import { query, where, orderBy, getDocs, Timestamp } from 'firebase/firestore';
 import Link from 'next/link';
 
-export const runtime = 'experimental-edge';
+// **修正**: 移除 runtime = 'experimental-edge'
+// export const runtime = 'experimental-edge';
 
 const PostItem = ({ post }) => (
     <Link href={`/post/${post.slug}`} legacyBehavior>
@@ -21,23 +25,28 @@ export default function HomePage({ posts }) {
   return (
     <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-        {posts.map(post => <PostItem key={post.id} post={post} />)}
+        {posts && posts.map(post => <PostItem key={post.id} post={post} />)}
       </div>
     </div>
   );
 }
 
 export async function getStaticProps() {
-    const q = query(postsCollectionRef, where("published", "==", true), orderBy("createdAt", "desc"));
-    const querySnapshot = await getDocs(q);
-    const posts = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            ...data,
-            id: doc.id,
-            createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toMillis() : 0,
-            updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toMillis() : 0,
-        };
-    });
-    return { props: { posts }, revalidate: 60 };
+    try {
+        const q = query(postsCollectionRef, where("published", "==", true), orderBy("createdAt", "desc"));
+        const querySnapshot = await getDocs(q);
+        const posts = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                ...data,
+                id: doc.id,
+                createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toMillis() : 0,
+                updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toMillis() : 0,
+            };
+        });
+        return { props: { posts }, revalidate: 60 };
+    } catch (error) {
+        console.error("getStaticProps for index failed:", error);
+        return { props: { posts: [] } }; // 返回空陣列以防建置失敗
+    }
 }
