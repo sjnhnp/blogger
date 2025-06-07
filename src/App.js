@@ -98,7 +98,7 @@ const Header = ({ admin, onLogout, navigate }) => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <a href="/" onClick={(e) => { e.preventDefault(); navigate('/'); }} className="text-2xl font-bold text-gray-800 cursor-pointer hover:text-blue-600 transition-colors">
-            My Elegant Blog
+            神翼鎮
           </a>
           <nav>
             {admin ? (
@@ -497,8 +497,8 @@ export default function App() {
       <Modal show={modalConfig.show} title={modalConfig.title} message={modalConfig.message} onConfirm={handleModalConfirm} onCancel={handleModalCancel} isConfirmDialog={modalConfig.isConfirmDialog} />
       {renderContent()}
       <footer className="text-center py-8 text-gray-500 text-sm">
-        <p>© {new Date().getFullYear()} My Elegant Blog. All rights reserved.</p>
-        <p className="mt-1">Powered by React, Firebase & Tailwind CSS</p>
+        <p>© {new Date().getFullYear()} 神翼鎮. All rights reserved.</p>
+         {/* <p className="mt-1">Powered by React, Firebase & Tailwind CSS</p>  */}
       </footer>
     </div>
   );
