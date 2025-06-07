@@ -27,6 +27,34 @@ const slugify = (text) => {
   return text.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '').replace(/--+/g, '-');
 };
 
+// **新增**: 智慧摘要產生函式
+const createExcerpt = (markdownContent) => {
+    if (!markdownContent) return '';
+    
+    // 移除 HTML 標籤 (例如 <iframe>)
+    const withoutHtml = markdownContent.replace(/<[^>]+>/g, '');
+    
+    // 移除 Markdown 格式並轉換為純文字
+    const plainText = withoutHtml
+      .replace(/!\[(.*?)\]\(.*?\)/g, '$1')      // 圖片: ![alt](src) -> alt
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // 連結: [text](url) -> text
+      .replace(/(\*\*|__)(.*?)\1/g, '$2')      // 粗體
+      .replace(/(\*|_)(.*?)\1/g, '$2')        // 斜體
+      .replace(/`{1,3}([^`]+)`{1,3}/g, '$1')   // 行內程式碼
+      .replace(/#+\s/g, '')                   // 標題
+      .replace(/-{3,}/g, '')                  // 分隔線
+      .replace(/`{3}.*?`{3}/gs, '')           // 程式碼區塊
+      .replace(/[>\s*+-`_~#]/g, ' ')          // 其他特殊字元
+      .replace(/\s+/g, ' ')                   // 多餘的空白
+      .trim();
+
+    if (plainText.length > 150) {
+        return plainText.substring(0, 150) + '...';
+    }
+    return plainText;
+}
+
+
 // --- 組件 ---
 
 const Modal = ({ show, title, message, onConfirm, onCancel, isConfirmDialog }) => {
@@ -45,7 +73,6 @@ const Modal = ({ show, title, message, onConfirm, onCancel, isConfirmDialog }) =
     );
 };
 
-// **新增**: 文章列表的骨架屏元件
 const SkeletonPostItem = () => (
     <div className="bg-white rounded-xl shadow-md overflow-hidden animate-pulse">
       <div className="p-8">
@@ -58,7 +85,6 @@ const SkeletonPostItem = () => (
     </div>
 );
 
-// **新增**: 文章內頁的骨架屏元件
 const PostPageSkeleton = () => (
     <main className="bg-white py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -138,7 +164,6 @@ const HomePage = ({ navigate }) => {
     fetchPosts();
   }, []);
 
-  // **修改**: 使用骨架屏取代「讀取中」文字
   if (loading) {
     return (
         <main className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
@@ -177,7 +202,7 @@ const PostPage = ({ slug }) => {
                     setPost({ ...docData, sanitizedContent });
                 } else {
                     console.error("找不到文章");
-                    setPost(null); // Explicitly set to null if not found
+                    setPost(null); 
                 }
             } catch (error) {
                 console.error("讀取文章內容失敗:", error);
@@ -188,7 +213,6 @@ const PostPage = ({ slug }) => {
         if (slug) fetchPost();
     }, [slug]);
 
-    // **修改**: 使用文章內頁骨架屏
     if (loading) return <PostPageSkeleton />;
     
     if (!post) return <div className="text-center py-20">找不到這篇文章。</div>;
@@ -349,7 +373,10 @@ const EditorPage = ({ id, navigate, setModalConfig }) => {
       return;
     }
     setSaving(true);
-    const postData = { title, content, excerpt: excerpt || content.substring(0, 150), slug: slugify(title), updatedAt: serverTimestamp(), published: publish };
+    // **修改**: 使用新的智慧摘要函式
+    const generatedExcerpt = excerpt || createExcerpt(content);
+    
+    const postData = { title, content, excerpt: generatedExcerpt, slug: slugify(title), updatedAt: serverTimestamp(), published: publish };
     try {
       if (id && id !== 'new') {
         await setDoc(doc(db, "posts", id), postData, { merge: true });
@@ -437,15 +464,12 @@ export default function App() {
   const handleModalCancel = () => { if (modalConfig.onCancel) { modalConfig.onCancel(); } closeModal(); };
 
   const renderContent = () => {
-    // **修改**: 移除「驗證身份中」的提示
     const path = location.split('/');
     
-    // 在 authReady 為 false 時，根據路由預先渲染骨架屏
     if (!authReady) {
         if (path[1] === 'post' && path[2]) {
             return <PostPageSkeleton />;
         }
-        // 對於首頁和其他頁面，顯示首頁的骨架屏
         return (
             <main className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
                 <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -455,7 +479,6 @@ export default function App() {
         );
     }
     
-    // 保護管理員路由
     if ((path[1] === 'admin' || path[1] === 'edit') && !isAdmin) {
         return <AdminLogin navigate={navigate} />;
     }
