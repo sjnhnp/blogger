@@ -17,10 +17,10 @@ export default function Layout({ children }) {
   };
 
   return (
-    <div className="min-h-screen font-sans">
+    <div className="min-h-screen font-sans bg-base">
       <Header user={user} isAdmin={isAdmin} loading={loading} onLogout={handleLogout} />
-      <main>{children}</main>
-      <footer className="text-center py-8 text-gray-500 text-sm">
+      <main className="py-8 sm:py-16">{children}</main>
+      <footer className="text-center py-12 text-primary/50 text-sm">
         <p>© {new Date().getFullYear()} My Elegant Blog. All rights reserved.</p>
         <p className="mt-1">Powered by Next.js, Firebase & Tailwind CSS</p>
       </footer>

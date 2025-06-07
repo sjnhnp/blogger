@@ -6,8 +6,6 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
 
-// **修正**: 移除 runtime 宣告
-
 export default function PostPage({ post }) {
     const router = useRouter();
     const [sanitizedContent, setSanitizedContent] = useState('');
@@ -22,13 +20,8 @@ export default function PostPage({ post }) {
         }
     }, [post?.content]);
 
-    if (router.isFallback) {
-        return <div>Loading...</div>;
-    }
-
-    if (!post) {
-        return <div>文章不存在</div>;
-    }
+    if (router.isFallback) return <div>Loading...</div>;
+    if (!post) return <div>文章不存在</div>;
     
     return (
         <>
@@ -36,12 +29,12 @@ export default function PostPage({ post }) {
                 <title>{post.title} | My Elegant Blog</title>
                 <meta name="description" content={post.excerpt} />
             </Head>
-            <main className="bg-white py-12">
+            <main className="bg-white py-12 sm:py-16 shadow-inner-subtle">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <article className="max-w-3xl mx-auto">
-                        <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-4">{post.title}</h1>
-                        <time className="text-gray-500 mb-8 block">發布於 {new Date(post.createdAt).toLocaleDateString()}</time>
-                        <div className="prose lg:prose-xl max-w-none" dangerouslySetInnerHTML={{ __html: sanitizedContent }}/>
+                        <h1 className="text-4xl md:text-5xl font-serif font-bold text-primary leading-tight mb-4">{post.title}</h1>
+                        <time className="text-primary/60 mb-8 block">發布於 {new Date(post.createdAt).toLocaleDateString()}</time>
+                        <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: sanitizedContent }}/>
                     </article>
                 </div>
             </main>
@@ -50,35 +43,23 @@ export default function PostPage({ post }) {
 }
 
 export async function getStaticPaths() {
-    try {
-        const q = firestoreQuery(postsCollectionRef, where("published", "==", true));
-        const snapshot = await getDocs(q);
-        const paths = snapshot.docs.map(doc => ({ params: { slug: doc.data().slug || '' } })).filter(p => p.params.slug);
-        // **修正**: fallback: false 表示只生成已知的路徑
-        return { paths, fallback: false };
-    } catch (error) {
-        console.error("getStaticPaths failed:", error);
-        return { paths: [], fallback: false };
-    }
+    const q = firestoreQuery(postsCollectionRef, where("published", "==", true));
+    const snapshot = await getDocs(q);
+    const paths = snapshot.docs.map(doc => ({ params: { slug: doc.data().slug || '' } })).filter(p => p.params.slug);
+    return { paths, fallback: false };
 }
 
 export async function getStaticProps({ params }) {
-    try {
-        const { slug } = params;
-        const q = firestoreQuery(postsCollectionRef, where("slug", "==", slug), where("published", "==", true));
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) return { notFound: true };
-        const docData = snapshot.docs[0].data();
-        const post = {
-            ...docData,
-            id: snapshot.docs[0].id,
-            createdAt: docData.createdAt instanceof Timestamp ? docData.createdAt.toMillis() : 0,
-            updatedAt: docData.updatedAt instanceof Timestamp ? docData.updatedAt.toMillis() : 0,
-        };
-        // **修正**: 移除 revalidate，改為純靜態生成
-        return { props: { post } };
-    } catch (error) {
-        console.error(`getStaticProps for ${params.slug} failed:`, error);
-        return { notFound: true };
-    }
+    const { slug } = params;
+    const q = firestoreQuery(postsCollectionRef, where("slug", "==", slug), where("published", "==", true));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return { notFound: true };
+    const docData = snapshot.docs[0].data();
+    const post = {
+        ...docData,
+        id: snapshot.docs[0].id,
+        createdAt: docData.createdAt.toMillis(),
+        updatedAt: docData.updatedAt.toMillis(),
+    };
+    return { props: { post } };
 }
