@@ -492,10 +492,12 @@ export default function App() {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen font-sans">
+    <div className="bg-gray-50 min-h-screen font-sans flex flex-col">
       <Header admin={isAdmin} onLogout={handleLogout} navigate={navigate} />
       <Modal show={modalConfig.show} title={modalConfig.title} message={modalConfig.message} onConfirm={handleModalConfirm} onCancel={handleModalCancel} isConfirmDialog={modalConfig.isConfirmDialog} />
+      <div className="flex-grow">
       {renderContent()}
+      </div>
       <footer className="text-center py-8 text-gray-500 text-sm">
         <p>© {new Date().getFullYear()} 神翼鎮. All rights reserved.</p>
          {/* <p className="mt-1">Powered by React, Firebase & Tailwind CSS</p>  */}
